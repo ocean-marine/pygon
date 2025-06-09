@@ -1,0 +1,1 @@
+"""Pygon project main package."""

@@ -71,16 +71,13 @@ else:
 
 ```python
 from dataclasses import dataclass
-from typing import TypeAlias, TypeVar
 
-# Define Pygon return value patterns with TypeAlias
-T = TypeVar('T')
-Result: TypeAlias = tuple[T | None, str | None]
-UserResult: TypeAlias = tuple[User | None, str | None]
+# Import centralized Result types from dedicated module
+from src.types.result_types import Result, ValidationResult, MultipleErrorResult
 
-# Error strategy patterns
-SingleValidation: TypeAlias = tuple[bool, str | None]      # Most common: fail fast
-MultipleValidation: TypeAlias = tuple[bool, list[str]]     # Forms: collect all errors
+# Create domain-specific type aliases using the centralized Result type
+UserResult = Result[User]
+ConfigResult = Result[dict]
 
 @dataclass
 class User:
@@ -104,7 +101,7 @@ def find_user_by_email(users: list[User], email: str) -> UserResult:
     return None, "user not found"
 
 # Single error pattern: fail fast (most common)
-def validate_email_format(email: str) -> SingleValidation:
+def validate_email_format(email: str) -> ValidationResult:
     """Validate single field - fail fast approach.
     
     Args:
@@ -120,7 +117,7 @@ def validate_email_format(email: str) -> SingleValidation:
     return True, None
 
 # Multiple errors pattern: collect all errors for better UX
-def validate_user_registration(form_data: dict) -> MultipleValidation:
+def validate_user_registration(form_data: dict) -> MultipleErrorResult:
     """Form validation - collect all errors for user feedback.
     
     Args:
@@ -146,7 +143,7 @@ def validate_user_registration(form_data: dict) -> MultipleValidation:
     return len(errors) == 0, errors
 
 # Generic Result type usage
-def parse_json_data(raw_data: str) -> Result[dict]:
+def parse_json_data(raw_data: str) -> ConfigResult:
     """Parse JSON string to dictionary.
     
     Args:
@@ -162,15 +159,53 @@ def parse_json_data(raw_data: str) -> Result[dict]:
         return None, f"json_parse_error: {e}"
 ```
 
+#### 集約化されたResult型
+
+Pygonプロジェクトでは、Result型を`src/types/result_types.py`に集約し、プロジェクト全体で一貫したエラーハンドリングパターンを実現します。
+
+```python
+# src/types/result_types.py
+from typing import TypeAlias, TypeVar
+
+T = TypeVar('T')
+Result: TypeAlias = tuple[T | None, str | None]
+ValidationResult: TypeAlias = tuple[bool, str | None]  
+MultipleErrorResult: TypeAlias = tuple[bool, list[str]]
+
+# 使用例: 各モジュールでインポートして使用
+from src.types.result_types import Result, ValidationResult, MultipleErrorResult
+
+# ドメイン固有の型エイリアスを作成
+UserResult = Result[User]
+ConfigResult = Result[dict]
+FileResult = Result[str]
+
+def load_user_config(user_id: int) -> ConfigResult:
+    """Load user configuration from database."""
+    # ... implementation
+    pass
+
+def validate_user_input(data: dict) -> MultipleErrorResult:
+    """Validate user input with multiple error collection."""
+    # ... implementation
+    pass
+```
+
+**集約化のメリット：**
+- プロジェクト全体でエラーハンドリングパターンが統一される
+- 新しいResult型の追加が容易
+- IDEの自動補完によりタイプミスを防げる
+- AIツールが一貫したパターンを学習しやすい
+
 #### エラー戦略の判断基準
 
-**✅ 単一エラー（str | None）を使う場面：**
+**✅ 単一エラー（ValidationResult）を使う場面：**
 - 一般的なビジネスロジック（最初のエラーで十分）
 - API呼び出し（明確な失敗理由が一つ）
 - ファイル・データベース操作（失敗原因は通常一つ）
 - パイプライン処理（次の処理に進めない）
 
-**✅ 複数エラー（list[str]）を使う場面：**
+**✅ 複数エラー（MultipleErrorResult）を使う場面：**
 - フォームバリデーション（ユーザーが全エラーを知りたい）
 - バッチ処理（部分的失敗を許容する場合）
 - 設定ファイル検証（複数項目の問題を一度に報告）
@@ -761,40 +796,54 @@ Want to define data structure?
 ```
 project/
 ├── src/
+│   ├── types/           # **NEW: Centralized type definitions**
+│   │   ├── __init__.py  # Export commonly used types
+│   │   └── result_types.py # Result, ValidationResult, MultipleErrorResult
+│   │
 │   ├── models/          # Data structures (@dataclass, Enum)
+│   │   ├── __init__.py  # Package initialization
 │   │   ├── entities.py  # User, Product etc. entities
 │   │   └── errors.py    # ErrorType etc. error definitions
 │   │
 │   ├── validators/      # Validation function groups
+│   │   ├── __init__.py  # Package initialization
 │   │   ├── common.py    # validate_range etc. generic functions
 │   │   └── domain.py    # Domain-specific validation
 │   │
 │   ├── services/        # Business logic function groups
+│   │   ├── __init__.py  # Package initialization
 │   │   ├── user.py      # create_user, update_user etc.
 │   │   └── payment.py   # process_payment etc.
 │   │
 │   ├── repositories/    # Data access function groups
+│   │   ├── __init__.py  # Package initialization
 │   │   ├── storage.py   # save_to_db, load_from_file etc.
 │   │   └── cache.py     # Cache operation functions
 │   │
 │   ├── protocols/       # Common interface definitions
+│   │   ├── __init__.py  # Package initialization
 │   │   └── interfaces.py # Storable, Validatable etc.
 │   │
 │   ├── config/          # Settings and constants
+│   │   ├── __init__.py  # Package initialization
 │   │   ├── settings.py  # @dataclass AppConfig
 │   │   └── constants.py # Constant definitions
 │   │
 │   └── utils/           # Utility functions
+│       ├── __init__.py  # Package initialization
 │       └── helpers.py   # Generic helper functions
 │
 ├── tests/               # Test code (same structure as src/)
+│   ├── __init__.py      # Package initialization
 │   ├── unit/            # Unit tests
+│   │   ├── __init__.py  # Package initialization
 │   │   ├── test_models/
 │   │   ├── test_validators/
 │   │   ├── test_services/
 │   │   └── test_repositories/
 │   │
 │   ├── integration/     # Integration tests
+│   │   ├── __init__.py  # Package initialization
 │   │   ├── test_workflows/
 │   │   └── test_api/
 │   │

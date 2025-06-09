@@ -555,57 +555,221 @@ def render_object(obj: Drawable) -> tuple[str, str | None]:
 
 ---
 
-## 高度なエラーハンドリング
+## 高度なエラーハンドリング（リッチエラー対応）
 
-### Go言語から学ぶ「エラーは値」の哲学
+### Go言語から学ぶ「エラーは値」の哲学の進化
 
-#### 構造化エラー（シンプルに）
+Pygonでは、従来の文字列ベースエラーを拡張し、デバッグに役立つ詳細な情報を提供するリッチエラーシステムを導入しました。
+
+#### PygonErrorクラス（構造化エラー）
 ```python
-@dataclass
+@dataclass(frozen=True)
 class PygonError:
-    type: str
-    message: str
-    cause: Exception | None = None
+    """デバッグ情報を豊富に含むリッチエラークラス"""
+    error_type: str                           # エラーの種類
+    message: str                              # 人間が読めるメッセージ
+    context: dict[str, Any]                   # エラー発生時のコンテキスト
+    timestamp: str                            # エラー発生時刻
+    source_location: str                      # ソースファイル:行番号
+    metadata: dict[str, Any]                  # デバッグ用メタデータ
+    cause: Exception | None = None            # 根本原因の例外
 
-def create_network_error(message: str) -> PygonError:
-    return PygonError(type="network_error", message=message)
+    def to_string(self) -> str:
+        """後方互換性のためのシンプル文字列形式"""
+        return f"{self.error_type}: {self.message}"
+    
+    def to_detailed_string(self) -> str:
+        """デバッグ用の詳細文字列形式"""
+        return " | ".join([
+            f"Error: {self.error_type}",
+            f"Message: {self.message}",
+            f"Timestamp: {self.timestamp}",
+            f"Source: {self.source_location}",
+            f"Context: {self.context}" if self.context else "",
+            f"Metadata: {self.metadata}" if self.metadata else "",
+            f"Cause: {self.cause}" if self.cause else ""
+        ])
 ```
 
-#### エラーラッピング（文脈の追加）
+#### リッチエラーのヘルパー関数
 ```python
-def wrap_error(err: Exception | PygonError, context: str) -> PygonError:
-    """エラーに文脈を追加"""
+from src.types.result_types import create_validation_error, create_not_found_error
+
+def validate_user_input(email: str, field_name: str = "email") -> ValidationResult:
+    """リッチエラーでのバリデーション例"""
+    if not email:
+        error = create_validation_error(
+            message="email is required",
+            context={
+                "field_name": field_name,
+                "provided_value": email,
+                "validation_step": "required_check"
+            },
+            metadata={
+                "validation_rule": "non_empty",
+                "expected_type": "non-empty string"
+            }
+        )
+        return False, error
+    
+    return True, None
+
+def find_user_by_id(users: list[User], user_id: int) -> UserResult:
+    """リッチエラーでの検索例"""
+    for user in users:
+        if user.id == user_id:
+            return user, None
+    
+    # 詳細なnot foundエラー
+    error = create_not_found_error(
+        message="user not found",
+        context={
+            "operation": "find_user_by_id",
+            "searched_id": user_id,
+            "total_users": len(users)
+        },
+        metadata={
+            "available_ids": [user.id for user in users],
+            "search_method": "linear_search"
+        }
+    )
+    return None, error
+```
+
+#### 後方互換性の提供
+```python
+# 新しいResult型（PygonErrorベース）
+Result: TypeAlias = tuple[T | None, PygonError | None]
+ValidationResult: TypeAlias = tuple[bool, PygonError | None]
+
+# Legacy型（文字列ベース）- 既存コードとの互換性
+LegacyResult: TypeAlias = tuple[T | None, str | None]
+LegacyValidationResult: TypeAlias = tuple[bool, str | None]
+
+# 変換ヘルパー
+def convert_to_legacy_error(rich_error: PygonError) -> str:
+    """リッチエラーを文字列に変換"""
+    return rich_error.to_string()
+
+# 既存関数をリッチエラー版とレガシー版で提供
+def validate_email_rich(email: str) -> ValidationResult:
+    """新しいリッチエラー版"""
+    if "@" not in email:
+        return False, create_validation_error("invalid email format")
+    return True, None
+
+def validate_email_legacy(email: str) -> LegacyValidationResult:
+    """従来の文字列エラー版"""
+    if "@" not in email:
+        return False, "validation_error: invalid email format"
+    return True, None
+```
+
+#### エラーラッピング（改良版）
+```python
+def wrap_with_context(
+    original_error: PygonError, 
+    operation: str, 
+    additional_context: dict[str, Any] | None = None
+) -> PygonError:
+    """既存エラーに追加のコンテキストを付与"""
+    new_context = {**original_error.context}
+    if additional_context:
+        new_context.update(additional_context)
+    new_context["wrapped_operation"] = operation
+    
     return PygonError(
-        type="wrapped_error",
-        message=f"{context}: {err}",
-        cause=err
+        error_type="wrapped_error",
+        message=f"{operation}: {original_error.message}",
+        context=new_context,
+        metadata={
+            **original_error.metadata,
+            "original_error_type": original_error.error_type,
+            "wrap_operation": operation
+        },
+        cause=original_error.cause or original_error
     )
 ```
 
-#### 複数エラーの蓄積
+#### 複数エラーの蓄積（改良版）
 ```python
-@dataclass
-class MultiError:
-    errors: list[PygonError]
-    operation: str
-    
-    def has_errors(self) -> bool:
-        return len(self.errors) > 0
-
-def process_multiple_files(files: list[str]) -> tuple[list[str], MultiError | None]:
-    """複数ファイル処理（部分的失敗を許容）"""
+def process_multiple_items_with_rich_errors(
+    items: list[str]
+) -> tuple[list[str], list[PygonError]]:
+    """複数項目処理でリッチエラーを収集"""
     processed = []
-    multi_err = MultiError([], "file processing")
+    errors = []
     
-    for file_path in files:
-        result, err = process_single_file(file_path)
+    for i, item in enumerate(items):
+        result, err = process_single_item(item)
         if err:
-            multi_err.errors.append(wrap_error(err, f"failed: {file_path}"))
+            # エラーに処理コンテキストを追加
+            contextual_error = wrap_with_context(
+                err, 
+                f"process_item[{i}]",
+                {"item_index": i, "item_value": item, "total_items": len(items)}
+            )
+            errors.append(contextual_error)
             continue
         processed.append(result)
     
-    return processed, multi_err if multi_err.has_errors() else None
+    return processed, errors
 ```
+
+#### デバッグ時の活用法
+```python
+def debug_error_details(error: PygonError) -> None:
+    """開発時のエラー詳細確認"""
+    print(f"=== Error Debug Info ===")
+    print(f"Type: {error.error_type}")
+    print(f"Message: {error.message}")
+    print(f"Time: {error.timestamp}")
+    print(f"Source: {error.source_location}")
+    
+    if error.context:
+        print(f"Context: {json.dumps(error.context, indent=2)}")
+    
+    if error.metadata:
+        print(f"Metadata: {json.dumps(error.metadata, indent=2)}")
+    
+    if error.cause:
+        print(f"Underlying cause: {error.cause}")
+    
+    print(f"Full detail: {error.to_detailed_string()}")
+
+# 使用例
+user, error = find_user_by_email(users, "invalid@email")
+if error:
+    # 本番環境：シンプルなログ
+    logger.error(f"User lookup failed: {error.to_string()}")
+    
+    # 開発環境：詳細なデバッグ情報
+    if DEBUG:
+        debug_error_details(error)
+```
+
+### リッチエラーの利点
+
+**🔍 詳細なデバッグ情報**
+- エラー発生箇所の正確な特定
+- 実行時のコンテキスト保存
+- メタデータによる技術的詳細
+
+**⏰ タイムスタンプ**
+- エラー発生時刻の記録
+- 時系列でのエラー追跡
+
+**🔗 例外チェーン**
+- 根本原因の例外保持
+- エラーの伝播経路追跡
+
+**🔄 後方互換性**
+- 既存コードへの影響最小
+- 段階的な移行が可能
+
+**🎯 適応的出力**
+- 本番環境：シンプルな文字列
+- 開発環境：詳細なデバッグ情報
 
 ---
 

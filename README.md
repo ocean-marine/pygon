@@ -9,7 +9,8 @@ This project follows **Pygon** coding style - a fusion of Python's flexibility a
 > 📋 See [PYGON.md](./PYGON.md) for complete style guidelines and examples.
 
 **Key Pygon principles:**
-- Explicit error handling via return values
+- Rich error handling with detailed debugging information
+- Explicit error handling via return values (Legacy support available)
 - TypeAlias for clear return patterns  
 - Immutable dataclasses with no methods
 - Single-responsibility functions
@@ -30,15 +31,29 @@ pip install -r requirements.txt
 
 ### Basic Usage
 ```python
-from src.services.example import process_data
+from src.examples.user_service import create_user
 
-# Pygon-style usage with explicit error handling
-result, err = process_data("input_data")
-if err:
-    print(f"Error: {err}")
+# Rich error handling (recommended)
+user, error = create_user("John Doe", "john@example.com")
+if error:
+    # Simple format for production
+    print(f"Error: {error.to_string()}")
+    
+    # Detailed format for debugging
+    print(f"Debug info: {error.to_detailed_string()}")
     return
 
-print(f"Success: {result}")
+print(f"Created user: {user}")
+
+# Legacy string-based error handling (for backward compatibility)
+from src.examples.user_service import create_user_legacy
+
+user, err_string = create_user_legacy("Jane Doe", "jane@example.com")
+if err_string:
+    print(f"Error: {err_string}")
+    return
+
+print(f"Created user: {user}")
 ```
 
 ## 📁 Project Structure
@@ -46,19 +61,21 @@ print(f"Success: {result}")
 ```
 project/
 ├── src/
+│   ├── types/           # **NEW** Centralized type definitions (Result, PygonError)
 │   ├── models/          # Data structures (@dataclass, Enum)
 │   ├── validators/      # Validation functions
 │   ├── services/        # Business logic functions
 │   ├── repositories/    # Data access functions
 │   ├── protocols/       # Interface definitions
 │   ├── config/          # Settings and constants
+│   ├── examples/        # **NEW** Rich error handling examples
 │   └── utils/           # Utility functions
 ├── tests/
 │   ├── unit/           # Unit tests
 │   ├── integration/    # Integration tests
 │   └── fixtures/       # Test data
 ├── docs/               # Documentation
-├── PYGON.md           # Pygon style guide
+├── PYGON.md           # Pygon style guide (includes rich error patterns)
 ├── TODO.md            # Development tasks
 └── README.md          # This file
 ```
@@ -103,12 +120,16 @@ This project is designed for **human-AI collaborative development**:
 
 ### Code Review Checklist
 - [ ] All functions have explicit return types
-- [ ] Error handling uses `tuple[Result, str | None]` pattern
+- [ ] Error handling uses rich `PygonError` or legacy string patterns appropriately
+- [ ] New code uses `tuple[Result, PygonError | None]` pattern (recommended)
+- [ ] Legacy compatibility maintained with `tuple[Result, str | None]` when needed
+- [ ] Rich errors include context and metadata for debugging
 - [ ] Dataclasses are immutable (`frozen=True`)
 - [ ] Single responsibility per function
 - [ ] Google-style docstrings
 - [ ] English comments only
 - [ ] Tests cover both success and error cases
+- [ ] Error messages provide actionable debugging information
 
 ## 🔧 Configuration
 

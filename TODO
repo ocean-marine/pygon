@@ -1,0 +1,96 @@
+# TODO
+
+> 📝 **Template Note**: This is just a starting template. Feel free to modify sections, add new categories, or completely restructure to fit your workflow!
+
+> 🤖 **AI Tip**: Copy relevant sections when working with AI tools.
+
+## 🔥 High Priority
+
+- [ ] Fix user validation bug in `src/validators/user.py`
+- [ ] Implement payment processing workflow
+- [ ] Add error handling to file upload service
+- [ ] Update database schema for new user fields
+
+## 🔄 Medium Priority
+
+- [ ] Refactor legacy functions to Pygon style
+- [ ] Add unit tests for payment module
+- [ ] Improve error messages consistency
+- [ ] Create user registration form validation
+
+## 💡 Low Priority / Ideas
+
+- [ ] Add async support to API endpoints
+- [ ] Performance optimization for large datasets
+- [ ] Add property-based testing
+- [ ] Create development setup documentation
+
+## 🤖 AI Collaboration
+
+### AI Suggestions
+- [ ] Better error categorization (suggested by Claude)
+- [ ] Batch processing utilities (suggested by GPT)
+- [ ] Add type hints to legacy code (suggested by Copilot)
+
+### Need Human Review
+- [ ] AI-generated test cases for edge cases
+- [ ] Performance impact of recent AI changes
+- [ ] Code style consistency after AI refactoring
+
+## 📝 Current Sprint
+
+### In Progress
+- [ ] User authentication system (started 2024-01-15)
+- [ ] API endpoint documentation
+- [ ] Database migration scripts
+
+### This Week
+- [ ] Complete user validation
+- [ ] Fix critical payment bug
+- [ ] Deploy to staging environment
+- [ ] Update README with new features
+
+## ✅ Completed
+
+- [x] Set up Pygon project structure
+- [x] Created basic validation functions
+- [x] Added TypeAlias definitions
+- [x] Updated PYGON.md with project specifics
+
+## 🐛 Bugs
+
+- [ ] Payment validation always returns error
+- [ ] User registration form crashes on empty email
+- [ ] File upload timeout after 30 seconds
+- [ ] Database connection pool exhaustion
+
+## 📚 Learning / Research
+
+- [ ] Study async Pygon patterns
+- [ ] Research better testing strategies
+- [ ] Explore GraphQL integration
+- [ ] Look into containerization options
+
+## 🎯 Goals
+
+### This Month
+- [ ] 90% test coverage
+- [ ] All functions use Pygon patterns
+- [ ] Zero critical bugs
+- [ ] Complete user management features
+
+### Next Quarter
+- [ ] Performance benchmarks
+- [ ] Multi-language support
+- [ ] Advanced search features
+- [ ] Mobile app integration
+
+---
+
+**Customization Ideas:**
+- Add your own priority levels (🚨 Urgent, ⭐ Nice-to-have)
+- Create team-specific sections (👥 Team Tasks, 🏠 Remote Work)
+- Use different emojis or no emojis at all
+- Add time estimates, assignees, or due dates
+- Create project-specific categories
+- Use whatever structure works best for your workflow!

@@ -184,6 +184,37 @@ def create_task(title: str) -> tuple[Task | None, str | None]:
 "file_io_error: cannot read file"
 ```
 
+### コメントの言語統一
+**必須要件**: ソースコード内のすべてのコメントは英語で記述する。
+
+```python
+# ✅ 推奨: 英語コメント
+def validate_user_data(user_data: dict) -> ValidationResult:
+    # Check if email field exists and is valid
+    if "email" not in user_data:
+        return False, "validation_error: email is required"
+    
+    # Validate email format using regex pattern
+    if not re.match(r'^[^@]+@[^@]+\.[^@]+$', user_data["email"]):
+        return False, "validation_error: invalid email format"
+    
+    return True, None
+
+# ❌ 非推奨: 日本語コメント
+def validate_user_data(user_data: dict) -> ValidationResult:
+    # メールフィールドの存在チェック
+    if "email" not in user_data:
+        return False, "validation_error: email is required"
+    
+    return True, None
+```
+
+**理由**: 
+- 国際的なチーム開発での統一性確保
+- 生成AIツールとの協調性向上
+- コードレビューの効率化
+- 技術文書との整合性維持
+
 ### 例外処理の適切な粒度
 ```python
 def load_config_file(path: str) -> tuple[dict | None, str | None]:

@@ -36,7 +36,7 @@ def divide(a: int, b: int) -> tuple[float | None, str | None]:
 
 result, err = divide(10, 0)
 if err:
-    print(f"エラー: {err}")
+    print(f"Error: {err}")
 ```
 
 ### 2. 徹底した型注釈
@@ -116,7 +116,7 @@ def with_status(task: Task, new_status: Status) -> Task:
 
 ```python
 # ❌ 複数責任
-def complete_task(task_id: int): # データ読込・検索・更新・保存を全て実行
+def complete_task(task_id: int): # Performs data loading, searching, updating, and saving all in one
 
 # ✅ 単一責任
 def find_task_by_id(tasks: list[Task], task_id: int) -> tuple[Task | None, str | None]:
@@ -202,7 +202,7 @@ def validate_user_data(user_data: dict) -> ValidationResult:
 
 # ❌ 非推奨: 日本語コメント
 def validate_user_data(user_data: dict) -> ValidationResult:
-    # メールフィールドの存在チェック
+    # Check email field existence
     if "email" not in user_data:
         return False, "validation_error: email is required"
     

@@ -13,8 +13,11 @@
 ### 従来Pythonの限界
 ```python
 # ❌ Pythonic but unclear
-def process(items): return [transform(x) for x in items if validate(x)]
-def load_config(): return json.load(open("config.json"))
+def process(items):
+    return [transform(x) for x in items if validate(x)]
+
+def load_config():
+    return json.load(open("config.json"))
 ```
 **問題**: エラーケース不明、型情報不足、暗黙的処理
 
@@ -27,11 +30,13 @@ def load_config(): return json.load(open("config.json"))
 
 ```python
 def divide(a: int, b: int) -> tuple[float | None, str | None]:
-    if b == 0: return None, "division by zero"
+    if b == 0:
+        return None, "division by zero"
     return a / b, None
 
 result, err = divide(10, 0)
-if err: print(f"エラー: {err}")
+if err:
+    print(f"エラー: {err}")
 ```
 
 ### 2. 徹底した型注釈
@@ -44,13 +49,16 @@ UserResult = Result[User]  # ドメイン固有型エイリアス
 
 def find_user_by_email(users: list[User], email: str) -> UserResult:
     for user in users:
-        if user.email == email: return user, None
+        if user.email == email:
+            return user, None
     return None, "user not found"
 
 # 単一エラー（fail fast）
 def validate_email_format(email: str) -> ValidationResult:
-    if not email: return False, "validation_error: email is required"
-    if "@" not in email: return False, "validation_error: invalid email format"
+    if not email:
+        return False, "validation_error: email is required"
+    if "@" not in email:
+        return False, "validation_error: invalid email format"
     return True, None
 
 # 複数エラー（UX重視）
@@ -113,7 +121,8 @@ def complete_task(task_id: int): # データ読込・検索・更新・保存を
 # ✅ 単一責任
 def find_task_by_id(tasks: list[Task], task_id: int) -> tuple[Task | None, str | None]:
     for task in tasks:
-        if task.id == task_id: return task, None
+        if task.id == task_id:
+            return task, None
     return None, "task_not_found"
 
 def update_task_status(task: Task, new_status: Status) -> Task:
@@ -122,10 +131,12 @@ def update_task_status(task: Task, new_status: Status) -> Task:
 # 組み合わせて実現
 def complete_task_workflow(task_id: int) -> tuple[Task | None, str | None]:
     tasks, err = load_all_tasks()
-    if err: return None, err
+    if err:
+        return None, err
     
     task, err = find_task_by_id(tasks, task_id)
-    if err: return None, err
+    if err:
+        return None, err
     
     completed_task = update_task_status(task, Status.COMPLETED)
     # ... 保存処理
@@ -137,11 +148,13 @@ def complete_task_workflow(task_id: int) -> tuple[Task | None, str | None]:
 
 ```python
 # ❌ 暗黙的
-def process_data(data): return transform(data)
+def process_data(data):
+    return transform(data)
 
 # ✅ 明示的
 def process_user_data(raw_data: dict[str, str]) -> tuple[User | None, str | None]:
-    if "email" not in raw_data: return None, "email field is required"
+    if "email" not in raw_data:
+        return None, "email field is required"
     return User(int(raw_data.get("id", 0)), raw_data.get("name", ""), raw_data["email"]), None
 ```
 
@@ -150,13 +163,16 @@ def process_user_data(raw_data: dict[str, str]) -> tuple[User | None, str | None
 ### バリデーション関数の必須化
 ```python
 def validate_task_title(title: str) -> tuple[bool, str | None]:
-    if not title: return False, "validation_error: title is required"
-    if len(title.strip()) > 100: return False, "validation_error: title too long"
+    if not title:
+        return False, "validation_error: title is required"
+    if len(title.strip()) > 100:
+        return False, "validation_error: title too long"
     return True, None
 
 def create_task(title: str) -> tuple[Task | None, str | None]:
     is_valid, err = validate_task_title(title)
-    if err: return None, err
+    if err:
+        return None, err
     # 処理実行
 ```
 
@@ -174,9 +190,12 @@ def load_config_file(path: str) -> tuple[dict | None, str | None]:
     try:
         content = Path(path).read_text(encoding="utf-8")
         return json.loads(content), None
-    except FileNotFoundError: return None, "file_not_found_error: config file does not exist"
-    except PermissionError: return None, "permission_error: cannot read config file"
-    except json.JSONDecodeError as e: return None, f"json_parse_error: {e}"
+    except FileNotFoundError:
+        return None, "file_not_found_error: config file does not exist"
+    except PermissionError:
+        return None, "permission_error: cannot read config file"
+    except json.JSONDecodeError as e:
+        return None, f"json_parse_error: {e}"
 ```
 
 ---
@@ -186,27 +205,42 @@ def load_config_file(path: str) -> tuple[dict | None, str | None]:
 ### 組み合わせ重視の設計思想
 ```python
 # ❌ 複雑な継承階層
-class Animal: pass
-class Mammal(Animal): pass
-class Dog(Mammal): pass
+class Animal:
+    pass
+
+class Mammal(Animal):
+    pass
+
+class Dog(Mammal):
+    pass
 
 # ✅ 組み合わせベース
 @dataclass
-class Animal: name: str; species: str
+class Animal:
+    name: str
+    species: str
+
 @dataclass 
-class MovementCapability: can_walk: bool; can_fly: bool
+class MovementCapability:
+    can_walk: bool
+    can_fly: bool
+
 @dataclass
-class Dog: animal: Animal; movement: MovementCapability
+class Dog:
+    animal: Animal
+    movement: MovementCapability
 
 def make_dog_bark(dog: Dog) -> tuple[str, str | None]:
-    if dog.animal.species != "dog": return "", "not a dog"
+    if dog.animal.species != "dog":
+        return "", "not a dog"
     return f"{dog.animal.name} says woof!", None
 ```
 
 ### プロトコル（Protocol）による柔軟性
 ```python
 class Drawable(Protocol):
-    def draw(self) -> tuple[str, str | None]: ...
+    def draw(self) -> tuple[str, str | None]:
+        ...
 
 def render_object(obj: Drawable) -> tuple[str, str | None]:
     return obj.draw()
@@ -221,11 +255,16 @@ def render_object(obj: Drawable) -> tuple[str, str | None]:
 ```python
 @dataclass(frozen=True)
 class PygonError:
-    error_type: str; message: str; context: dict[str, Any]
-    timestamp: str; source_location: str; metadata: dict[str, Any]
+    error_type: str
+    message: str
+    context: dict[str, Any]
+    timestamp: str
+    source_location: str
+    metadata: dict[str, Any]
     cause: Exception | None = None
 
-    def to_string(self) -> str: return f"{self.error_type}: {self.message}"
+    def to_string(self) -> str:
+        return f"{self.error_type}: {self.message}"
 
 # ヘルパー関数で作成
 error = create_validation_error("email is required", 
@@ -284,20 +323,29 @@ config, err = load_config_file("settings.json")
 ```python
 # ✅ データ構造
 @dataclass
-class User: id: int; name: str; email: str  # メソッドなし
+class User:
+    id: int
+    name: str
+    email: str  # メソッドなし
 
 # ✅ 状態保持
 class FileStorage:
-    def __init__(self, directory: str): self.directory = directory
-    def save_data(self, data: dict) -> tuple[bool, str | None]: pass
+    def __init__(self, directory: str):
+        self.directory = directory
+    
+    def save_data(self, data: dict) -> tuple[bool, str | None]:
+        pass
 
 # ✅ Protocol
 class Storage(Protocol):
-    def save(self, data: dict) -> tuple[bool, str | None]: ...
+    def save(self, data: dict) -> tuple[bool, str | None]:
+        ...
 
 # ❌ 状態なしロジック → 関数を使用
 def validate_email(email: str) -> tuple[bool, str | None]:
-    return "@" in email, None if "@" in email else "invalid email"
+    if "@" in email:
+        return True, None
+    return False, "invalid email"
 ```
 
 ---
@@ -338,11 +386,13 @@ project/
 class TestEmailValidation:
     def test_valid_email_returns_success(self):
         result, error = validate_email_format("user@example.com")
-        assert error is None; assert result is True
+        assert error is None
+        assert result is True
     
     def test_invalid_email_returns_error(self):
         result, error = validate_email_format("invalid-email")
-        assert result is False; assert "validation_error" in error
+        assert result is False
+        assert "validation_error" in error
 
 # 推奨: 成功・失敗ケースをペアで作成、エラーメッセージ検証、モック活用
 ```

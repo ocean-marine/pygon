@@ -408,6 +408,7 @@ project/
 - **PYGON.md**: チーム・AI共通の統一指針（必須）
 - **README.md**: プロジェクト概要、Pygonスタイル言及
 - **TODO.md**: 開発タスク、AI協調記録（自由に改変推奨）
+- **requirements-specification-template.md**: Pygonスタイル準拠の要件定義テンプレート
 
 ### TDD（テスト駆動開発）とPygon
 **Pygon TDDサイクル**: テスト作成 → 最小実装 → リファクタリング（関数分割・責任分離）

@@ -212,6 +212,137 @@ from models.user import User
 - チーム開発での一貫性向上
 - デバッグ時の依存関係把握の容易さ
 
+### typesモジュール競合回避方針
+**重要**: Pygonプロジェクトの`src/types/`モジュールとPython標準ライブラリの`types`モジュールの競合を防ぐ。
+
+#### 基本原則
+1. **絶対import必須**: 標準ライブラリの`types`との混同を防ぐため
+2. **明示的な命名**: コードレビュー時に意図を明確にする
+3. **import aliasの活用**: 必要に応じて別名を使用する
+
+```python
+# ✅ 推奨: Pygonの型定義
+from src.types.result_types import Result, ValidationResult, PygonError
+from src.types.result_types import create_validation_error
+
+# ✅ 推奨: Python標準ライブラリのtypes
+import types  # 標準ライブラリ
+from types import SimpleNamespace, ModuleType
+
+# ✅ 推奨: 明示的なalias（混同を避ける場合）
+import types as python_types
+from src.types import result_types as pygon_types
+
+# ❌ 危険: 曖昧なimport
+from types import *  # どのtypesか不明
+import types  # この後に from src.types import * は混乱の元
+```
+
+#### 実装ガイドライン
+
+**1. Pygon型定義の使用**
+```python
+# Result型を使用する場合
+from src.types.result_types import Result, ValidationResult
+
+UserResult = Result[User]  # ドメイン固有型エイリアス
+
+def create_user(name: str, email: str) -> UserResult:
+    # バリデーション処理
+    pass
+```
+
+**2. Python標準types使用時の注意**
+```python
+# 標準ライブラリのtypesが必要な場合
+import types
+from types import SimpleNamespace, ModuleType
+
+def create_dynamic_config(data: dict) -> types.SimpleNamespace:
+    return types.SimpleNamespace(**data)
+
+# 型チェックでの使用例
+def is_module_type(obj: Any) -> bool:
+    return isinstance(obj, types.ModuleType)
+```
+
+**3. 両方を使用する場合の分離**
+```python
+# 標準ライブラリのtypes
+import types as python_types
+from types import ModuleType
+
+# Pygonのtypes
+from src.types.result_types import Result, PygonError
+from src.types.result_types import create_validation_error
+
+def process_module_config(module: ModuleType, config_data: dict) -> Result[python_types.SimpleNamespace]:
+    # バリデーション
+    is_valid, error = validate_config_data(config_data)
+    if not is_valid:
+        return None, error
+    
+    # 動的設定オブジェクト作成
+    config = python_types.SimpleNamespace(**config_data)
+    return config, None
+
+def validate_config_data(data: dict) -> tuple[bool, PygonError | None]:
+    if not data:
+        return False, create_validation_error("config data is required")
+    return True, None
+```
+
+#### 命名規則とファイル構成
+
+**推奨ディレクトリ構造**
+```
+src/
+├── types/                    # Pygon型定義（必須）
+│   ├── __init__.py          # 主要型のexport
+│   ├── result_types.py      # Result, ValidationResult等
+│   ├── domain_types.py      # ドメイン固有型（オプション）
+│   └── protocol_types.py    # Protocol定義（オプション）
+├── utils/
+│   └── python_types_utils.py # 標準typesのユーティリティ
+```
+
+**ファイル命名の明確化**
+- `result_types.py`: Pygonスタイルの戻り値型
+- `domain_types.py`: ビジネスドメイン固有の型
+- `protocol_types.py`: Protocol/インターフェース定義
+- `python_types_utils.py`: 標準ライブラリtypesのヘルパー
+
+#### エラー防止のためのチェックポイント
+
+**コードレビュー時の確認項目**
+```python
+# ✅ 確認: このimportは意図通りか？
+from types import SimpleNamespace  # 標準ライブラリ？
+from src.types.result_types import Result  # Pygon型？
+
+# ✅ 確認: 混在している場合、区別が明確か？
+import types  # 標準ライブラリ
+from src.types.result_types import Result  # Pygon型
+# → 同じファイル内で両方使用する場合はaliasを検討
+
+# ✅ 確認: 新規開発者が混同しないか？
+# コメントやdocstringで意図を明記
+def process_data(data: dict) -> Result[types.SimpleNamespace]:
+    """Process configuration data.
+    
+    Uses Pygon Result type for error handling and Python's standard
+    types.SimpleNamespace for dynamic configuration objects.
+    """
+    pass
+```
+
+**AIツール協調のための注意点**
+- **import文の明示**: AIツールが正しい型を推論できるよう、明示的なimportを使用
+- **コメントでの意図説明**: 混同しやすい箇所にはコメントで説明
+- **型注釈の完全性**: 戻り値型を明確に指定し、AIツールの推論をサポート
+
+この方針により、Pygonプロジェクトで型システムを安全かつ効率的に活用できる。
+
 ### コメントの言語統一
 **必須要件**: ソースコード内のすべてのコメントは英語で記述する。
 

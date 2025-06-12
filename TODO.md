@@ -72,6 +72,12 @@
   - [x] Defined absolute imports as mandatory standard
   - [x] Fixed existing relative import in src/types/__init__.py
   - [x] Documented benefits for AI collaboration and code consistency
+- [x] **Defined types module conflict avoidance policy (Issue #18)**
+  - [x] Added comprehensive "typesモジュール競合回避方針" section to PYGON.md
+  - [x] Established clear guidelines for using src/types/ vs Python's standard types module
+  - [x] Created implementation examples and code review checklist
+  - [x] Updated README.md code review checklist with types module import requirements
+  - [x] Documented AI tool collaboration considerations for types module usage
 
 ## 🐛 Bugs
 

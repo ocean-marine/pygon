@@ -130,6 +130,7 @@ This project is designed for **human-AI collaborative development**:
 - [ ] English comments only
 - [ ] Tests cover both success and error cases
 - [ ] Error messages provide actionable debugging information
+- [ ] **Types module imports**: Use absolute imports (`from src.types.result_types import Result`) to avoid conflicts with Python's standard `types` module
 
 ## 🔧 Configuration
 

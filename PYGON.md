@@ -184,6 +184,34 @@ def create_task(title: str) -> tuple[Task | None, str | None]:
 "file_io_error: cannot read file"
 ```
 
+### importの方針統一
+**必須要件**: すべてのimport文は絶対importを使用する。相対importは使用しない。
+
+```python
+# ✅ 推奨: 絶対import
+from src.types.result_types import Result, ValidationResult
+from src.services.user_service import create_user
+from src.models.user import User
+from src.validators.email_validator import validate_email
+
+# ❌ 非推奨: 相対import（ドット付き）
+from ..types.result_types import Result, ValidationResult
+from .user_service import create_user
+from ...models.user import User
+
+# ❌ 非推奨: 相対import（ドットなし）
+from types.result_types import Result, ValidationResult
+from services.user_service import create_user
+from models.user import User
+```
+
+**理由**: 
+- 生成AIツールでのimportエラー防止
+- プロジェクト構造の明確化
+- ファイル移動時のimport維持
+- チーム開発での一貫性向上
+- デバッグ時の依存関係把握の容易さ
+
 ### コメントの言語統一
 **必須要件**: ソースコード内のすべてのコメントは英語で記述する。
 

@@ -8,7 +8,7 @@ MultipleErrorResult (multiple errors).
 Makes error conditions explicit, eliminates inconsistency, provides clear function contracts.
 """
 
-from .result_types import Result, ErrorResult, ValidationResult, MultipleErrorResult
+from src.types.result_types import Result, ErrorResult, ValidationResult, MultipleErrorResult
 
 __all__ = [
     "Result",

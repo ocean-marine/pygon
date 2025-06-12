@@ -67,6 +67,11 @@
   - [x] Implemented backward compatibility with legacy string errors
   - [x] Updated examples to demonstrate rich vs legacy patterns
   - [x] Enhanced PYGON.md documentation with rich error patterns
+- [x] **Established absolute import policy (Issue #16)**
+  - [x] Added comprehensive import policy section to PYGON.md
+  - [x] Defined absolute imports as mandatory standard
+  - [x] Fixed existing relative import in src/types/__init__.py
+  - [x] Documented benefits for AI collaboration and code consistency
 
 ## 🐛 Bugs
 

@@ -152,6 +152,7 @@ if result is not None:
 3. **絶対import**: 相対import禁止、生成AIとの協調性向上
 4. **コメント**: 英語、6行に1行程度（17%）の適切な頻度
 5. **ファイル要約**: すべてのPythonファイルにdocstring必須
+6. **Docstring形式**: Google形式を使用（詳細は以下参照）
 
 ```python
 """User validation functions for Pygon style programming.
@@ -183,6 +184,140 @@ def load_config_file(path: str) -> Result[dict, str]:
     except json.JSONDecodeError as e:
         return Err(f"json_parse_error: {e}")
 ```
+
+---
+
+## Docstring規約 (Google形式)
+
+すべての関数、メソッド、クラスにはGoogle形式のdocstringを記載する。
+
+### Google形式の基本構造
+
+```python
+def function_name(param1: type1, param2: type2) -> return_type:
+    """Brief description of what the function does.
+    
+    Longer description if needed. This can span multiple lines
+    and provide more detailed information about the function's
+    behavior, algorithms, or important notes.
+    
+    Args:
+        param1: Description of the first parameter.
+        param2: Description of the second parameter.
+            Can span multiple lines if needed.
+    
+    Returns:
+        Description of what the function returns.
+        Include type information if not obvious from type hints.
+    
+    Raises:
+        ErrorType: Description of when this error is raised.
+        AnotherError: Description of another error condition.
+    
+    Example:
+        Basic usage example:
+        
+        >>> result = function_name("value1", 42)
+        >>> print(result)
+        Expected output
+    
+    Note:
+        Any additional notes, warnings, or important information.
+    """
+    pass
+```
+
+### Pygon準拠のdocstring例
+
+```python
+def validate_email(email: str) -> Result[bool, str]:
+    """Validate email format using business rules.
+    
+    Checks if the provided email address follows basic email format
+    requirements including presence of @ symbol and non-empty string.
+    
+    Args:
+        email: Email address string to validate.
+    
+    Returns:
+        Result[bool, str]: Ok(True) if email is valid, 
+        Err(error_message) if validation fails.
+    
+    Example:
+        >>> result = validate_email("user@example.com")
+        >>> assert result.is_ok()
+        
+        >>> result = validate_email("invalid-email")
+        >>> assert result.is_err()
+        >>> print(result.unwrap_err())
+        validation_error: invalid email format
+    """
+    if not email:
+        return Err("validation_error: email is required")
+    if "@" not in email:
+        return Err("validation_error: invalid email format")
+    return Ok(True)
+
+@dataclass(frozen=True)
+class User:
+    """User data model for the application.
+    
+    Represents a user with basic identification and contact information.
+    Uses frozen dataclass to ensure immutability following Pygon principles.
+    
+    Attributes:
+        id: Unique identifier for the user.
+        name: Full name of the user.
+        email: Email address for the user.
+    
+    Example:
+        >>> user = User(id=1, name="John Doe", email="john@example.com")
+        >>> assert user.id == 1
+    """
+    id: int
+    name: str
+    email: str
+
+def create_user(name: str, email: str) -> Result[User, str]:
+    """Create a new user with validation.
+    
+    Validates input data and creates a User instance if all validations pass.
+    Uses Pygon error handling patterns with explicit Result types.
+    
+    Args:
+        name: Full name of the user. Must be non-empty and <= 50 characters.
+        email: Email address. Must be valid email format.
+    
+    Returns:
+        Result[User, str]: Ok(User) if creation successful,
+        Err(error_message) if validation fails.
+    
+    Example:
+        >>> result = create_user("John Doe", "john@example.com")
+        >>> if result.is_ok():
+        ...     user = result.unwrap()
+        ...     print(f"Created user: {user.name}")
+        
+        >>> result = create_user("", "invalid")
+        >>> if result.is_err():
+        ...     print(f"Error: {result.unwrap_err()}")
+        Error: User creation failed: validation_error: name is required
+    """
+    validation_result = validate_user_data(name, email)
+    if validation_result.is_err():
+        return validation_result
+    
+    user = User(id=1, name=name.strip(), email=email.lower())
+    return Ok(user)
+```
+
+### セクション使用ガイドライン
+
+- **Args**: 必須。すべてのパラメータを記載
+- **Returns**: 必須。戻り値の型と意味を明記
+- **Raises**: 例外を発生させる場合のみ記載
+- **Example**: 複雑な関数には使用例を記載
+- **Note**: 重要な注意事項がある場合のみ記載
 
 ---
 

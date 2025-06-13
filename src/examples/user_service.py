@@ -11,18 +11,46 @@ MultipleErrorsResult = Result[bool, list[str]]
 
 @dataclass(frozen=True)
 class User:
+    """User data model for the application.
+    
+    Represents a user with basic identification and contact information.
+    Uses frozen dataclass to ensure immutability following Pygon principles.
+    
+    Attributes:
+        id: Unique identifier for the user.
+        name: Full name of the user.
+        email: Email address for the user.
+    
+    Example:
+        >>> user = User(id=1, name="John Doe", email="john@example.com")
+        >>> assert user.id == 1
+        >>> assert user.name == "John Doe"
+    """
     id: int
     name: str
     email: str
 
 def validate_email(email: str) -> Result[bool, str]:
-    """Validate email format using result library.
+    """Validate email format using business rules.
+    
+    Checks if the provided email address follows basic email format
+    requirements including presence of @ symbol and non-empty string.
     
     Args:
-        email: Email address to validate.
-        
+        email: Email address string to validate.
+    
     Returns:
-        Result containing validation success or error message.
+        Result[bool, str]: Ok(True) if email is valid, 
+        Err(error_message) if validation fails.
+    
+    Example:
+        >>> result = validate_email("user@example.com")
+        >>> assert result.is_ok()
+        
+        >>> result = validate_email("invalid-email")
+        >>> assert result.is_err()
+        >>> print(result.unwrap_err())
+        validation_error: invalid email format
     """
     if not email:
         return Err("validation_error: email is required")
@@ -100,14 +128,30 @@ def validate_user_data_legacy(name: str, email: str) -> MultipleErrorResult:
     return len(errors) == 0, errors
 
 def create_user(name: str, email: str) -> UserResult:
-    """Create a new user with result library validation.
+    """Create a new user with validation.
+    
+    Validates input data and creates a User instance if all validations pass.
+    Uses Pygon error handling patterns with explicit Result types.
     
     Args:
-        name: User name.
-        email: User email address.
-        
+        name: Full name of the user. Must be non-empty and <= 50 characters.
+        email: Email address. Must be valid email format.
+    
     Returns:
-        Result containing created user or error message.
+        Result[User, str]: Ok(User) if creation successful,
+        Err(error_message) if validation fails.
+    
+    Example:
+        >>> result = create_user("John Doe", "john@example.com")
+        >>> if result.is_ok():
+        ...     user = result.unwrap()
+        ...     print(f"Created user: {user.name}")
+        Created user: John Doe
+        
+        >>> result = create_user("", "invalid")
+        >>> if result.is_err():
+        ...     print(f"Error: {result.unwrap_err()}")
+        Error: User creation failed: validation_error: name is required
     """
     # Validate inputs using result library pattern
     validation_result = validate_user_data(name, email)
@@ -194,7 +238,19 @@ def process_user_registration(form_data: dict) -> Result[User, str]:
 # Demonstration of error handling patterns
 
 def demonstrate_result_library_usage():
-    """Example showing result library error handling patterns."""
+    """Demonstrate result library error handling patterns.
+    
+    Shows various error handling scenarios using the result library
+    including validation, user search, and user creation workflows.
+    Prints examples of both successful and error cases.
+    
+    Example:
+        >>> demonstrate_result_library_usage()
+        === Result Library Error Handling ===
+        Email validation error: validation_error: invalid email format
+        User search error: not_found_error: user not found
+        ...
+    """
     
     # Test data
     invalid_email = "not-an-email"

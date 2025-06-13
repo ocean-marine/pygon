@@ -231,6 +231,104 @@ def process_user_data(raw_data: dict) -> Result[dict, str]:
 
 ---
 
+## 非推奨記法
+
+### ウォルラス演算子（セイウチ演算子）の非推奨化
+**理由**: 明示性とAI協調の観点から、ウォルラス演算子`:=`の使用は非推奨。
+
+```python
+# ❌ 非推奨: ウォルラス演算子
+if (result := process_data(input_data)) is not None:
+    return result
+
+# ✅ 推奨: 明示的な代入と条件分岐
+result = process_data(input_data)
+if result is not None:
+    return result
+
+# ❌ 非推奨: リスト内包でのウォルラス演算子
+filtered = [y for x in items if (y := transform(x)) is not None]
+
+# ✅ 推奨: 関数分離による明示的処理
+def filter_transformed_items(items: list) -> list:
+    result = []
+    for item in items:
+        transformed = transform(item)
+        if transformed is not None:
+            result.append(transformed)
+    return result
+
+filtered = filter_transformed_items(items)
+```
+
+**非推奨とする理由**:
+- **可読性の低下**: 代入と条件判定が同一行で発生し、処理の流れが不明確
+- **AI協調の阻害**: 生成AIツールが意図を正確に把握しにくい構文
+- **デバッグの困難**: 変数の生存期間とスコープが曖昧
+- **チーム開発での混乱**: 新規メンバーの理解コストが高い
+
+### 末尾コメントの非推奨化
+**理由**: コードの保守性とAI協調の観点から、行末コメントの使用は非推奨。
+
+```python
+# ❌ 非推奨: 末尾コメント
+def calculate_tax(price: float) -> float:
+    base_rate = 0.08  # Basic tax rate
+    premium_rate = 0.10  # Premium tax rate for expensive items
+    
+    if price > 1000:  # Check if item is expensive
+        return price * premium_rate  # Apply premium rate
+    return price * base_rate  # Apply basic rate
+
+# ✅ 推奨: 上部コメントと明示的な変数名
+def calculate_tax(price: float) -> float:
+    # Tax rates defined by government regulation
+    basic_tax_rate = 0.08
+    premium_tax_rate = 0.10
+    
+    # Premium tax applies to items over 1000 yen
+    expensive_item_threshold = 1000
+    
+    if price > expensive_item_threshold:
+        return price * premium_tax_rate
+    return price * basic_tax_rate
+```
+
+**非推奨とする理由**:
+- **コードフォーマットの不安定性**: 行の長さが不均一になり、可読性が低下
+- **保守性の問題**: コードと末尾コメントの同期が困難
+- **AI協調の阻害**: 生成AIツールがコードとコメントの対応関係を誤解する可能性
+- **バージョン管理での競合**: コード変更時にコメントの更新を忘れやすい
+
+### 推奨される代替パターン
+
+**1. 明示的な変数名による自己文書化**
+```python
+# ❌ 末尾コメントに依存
+max_retry = 3  # Maximum retry attempts
+
+# ✅ 明示的な変数名
+maximum_retry_attempts = 3
+```
+
+**2. 関数分割による意図の明確化**
+```python
+# ❌ ウォルラス演算子での複雑化
+if (validated_user := validate_and_transform_user(raw_data)) and validated_user.is_active:
+    process_user(validated_user)
+
+# ✅ 関数分割による明確化
+validated_user, validation_error = validate_and_transform_user(raw_data)
+if validation_error:
+    handle_validation_error(validation_error)
+    return
+
+if is_user_active(validated_user):
+    process_user(validated_user)
+```
+
+---
+
 ## 実践上の重要な注意点
 
 ### バリデーション関数の必須化

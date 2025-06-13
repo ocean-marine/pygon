@@ -274,8 +274,8 @@ filtered = filter_transformed_items(items)
 - **デバッグの困難**: 変数の生存期間とスコープが曖昧
 - **チーム開発での混乱**: 新規メンバーの理解コストが高い
 
-### 末尾コメントの非推奨化
-**理由**: コードの保守性とAI協調の観点から、行末コメントの使用は非推奨。
+### 末尾コメントの非推奨化 ⚠️
+**重要**: コードの保守性とAI協調の観点から、行末コメントの使用は**完全に非推奨**とする。
 
 ```python
 # ❌ 非推奨: 末尾コメント
@@ -303,9 +303,10 @@ def calculate_tax(price: float) -> float:
 
 **非推奨とする理由**:
 - **コードフォーマットの不安定性**: 行の長さが不均一になり、可読性が低下
-- **保守性の問題**: コードと末尾コメントの同期が困難
+- **保守性の問題**: コードと末尾コメントの同期が困難  
 - **AI協調の阻害**: 生成AIツールがコードとコメントの対応関係を誤解する可能性
 - **バージョン管理での競合**: コード変更時にコメントの更新を忘れやすい
+- **Pygonの基本原則違反**: 明示性と保守性を重視するPygonスタイルに反する
 
 ### 推奨される代替パターン
 
@@ -518,6 +519,64 @@ def process_data(data: dict) -> Result[types.SimpleNamespace]:
 - **型注釈の完全性**: 戻り値型を明確に指定し、AIツールの推論をサポート
 
 この方針により、Pygonプロジェクトで型システムを安全かつ効率的に活用できる。
+
+### コメント頻度の基準
+**推奨頻度**: コードにおけるコメントの頻度は **6行に1行程度（17%）** を目安とする。
+
+```python
+# ✅ 推奨: 適切なコメント頻度の例
+def process_user_registration(form_data: dict) -> Result[User, str]:
+    # Extract user data from form with validation
+    name = form_data.get("name", "").strip()
+    email = form_data.get("email", "").lower()
+    
+    # Validate required fields before processing
+    if not name:
+        return Err("validation_error: name is required")
+    
+    # Check email format using business rules
+    if "@" not in email or len(email.split("@")) != 2:
+        return Err("validation_error: invalid email format")
+    
+    # Create user object with validated data
+    user = User(
+        id=generate_user_id(),
+        name=name,
+        email=email
+    )
+    
+    # Save to database with error handling
+    save_result = save_user_to_database(user)
+    if save_result.is_err():
+        return Err(f"database_error: {save_result.unwrap_err()}")
+    
+    return Ok(user)
+```
+
+**コメント使用の判断基準**:
+- **複雑なビジネスロジック**: 処理の意図や理由を説明
+- **外部システムとの連携**: API呼び出しやデータベース操作の説明
+- **エラーハンドリングの戦略**: 例外処理の方針を明記
+- **パフォーマンス考慮**: 最適化や計算量に関する注意点
+- **将来の拡張予定**: TODO やFIXMEマーカーの使用
+
+**避けるべきコメント**:
+```python
+# ❌ 避けるべき: 自明なコメント
+user_id = 1  # Set user ID to 1
+name = "John"  # Set name to John
+
+# ❌ 避けるべき: コードの内容を単純に繰り返す
+if user.is_active:  # Check if user is active
+    process_user(user)  # Process the user
+```
+
+**理由**: 
+- AI協調における理解促進
+- チーム開発での意図共有
+- 複雑なロジックの可読性向上
+- コードレビューの効率化
+- 保守性の向上
 
 ### コメントの言語統一
 **必須要件**: ソースコード内のすべてのコメントは英語で記述する。

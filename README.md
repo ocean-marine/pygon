@@ -374,6 +374,48 @@ def validate_user_data(user_data: dict) -> ValidationResult:
 - コードレビューの効率化
 - 技術文書との整合性維持
 
+### Pythonファイル要約の必須化
+**必須要件**: すべてのPythonファイルの冒頭に、そのファイルの要約を記載する。
+
+```python
+# ✅ 推奨: モジュールレベルdocstring
+"""User validation functions for Pygon style programming.
+
+This module provides validation functions for user data including email format
+validation, user data validation, and user creation with explicit error handling.
+
+Functions:
+    validate_email: Validates email format with rich error information
+    validate_user_data: Validates complete user registration data
+    create_user: Creates a new user with validation
+"""
+
+from src.types.result_types import ValidationResult, UserResult
+
+def validate_email(email: str) -> ValidationResult:
+    # Function implementation
+    pass
+
+# ❌ 非推奨: 要約なし
+from src.types.result_types import ValidationResult, UserResult
+
+def validate_email(email: str) -> ValidationResult:
+    # Function implementation
+    pass
+```
+
+**docstring必須要素**:
+- **目的**: ファイルの主要な機能・責任
+- **内容**: 主要な関数・クラス・定数の簡潔な説明
+- **依存関係**: 重要な外部依存の明記（オプション）
+
+**理由**:
+- ファイル単位での理解促進
+- AIツールとの協調性向上
+- コードレビューの効率化
+- 新規開発者のオンボーディング支援
+- プロジェクト構造の明確化
+
 ### 例外処理の適切な粒度
 ```python
 def load_config_file(path: str) -> tuple[dict | None, str | None]:

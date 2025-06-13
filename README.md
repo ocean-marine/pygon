@@ -519,6 +519,64 @@ def process_data(data: dict) -> Result[types.SimpleNamespace]:
 
 この方針により、Pygonプロジェクトで型システムを安全かつ効率的に活用できる。
 
+### コメント頻度の基準
+**推奨頻度**: コードにおけるコメントの頻度は **6行に1行程度（17%）** を目安とする。
+
+```python
+# ✅ 推奨: 適切なコメント頻度の例
+def process_user_registration(form_data: dict) -> Result[User, str]:
+    # Extract user data from form with validation
+    name = form_data.get("name", "").strip()
+    email = form_data.get("email", "").lower()
+    
+    # Validate required fields before processing
+    if not name:
+        return Err("validation_error: name is required")
+    
+    # Check email format using business rules
+    if "@" not in email or len(email.split("@")) != 2:
+        return Err("validation_error: invalid email format")
+    
+    # Create user object with validated data
+    user = User(
+        id=generate_user_id(),
+        name=name,
+        email=email
+    )
+    
+    # Save to database with error handling
+    save_result = save_user_to_database(user)
+    if save_result.is_err():
+        return Err(f"database_error: {save_result.unwrap_err()}")
+    
+    return Ok(user)
+```
+
+**コメント使用の判断基準**:
+- **複雑なビジネスロジック**: 処理の意図や理由を説明
+- **外部システムとの連携**: API呼び出しやデータベース操作の説明
+- **エラーハンドリングの戦略**: 例外処理の方針を明記
+- **パフォーマンス考慮**: 最適化や計算量に関する注意点
+- **将来の拡張予定**: TODO やFIXMEマーカーの使用
+
+**避けるべきコメント**:
+```python
+# ❌ 避けるべき: 自明なコメント
+user_id = 1  # Set user ID to 1
+name = "John"  # Set name to John
+
+# ❌ 避けるべき: コードの内容を単純に繰り返す
+if user.is_active:  # Check if user is active
+    process_user(user)  # Process the user
+```
+
+**理由**: 
+- AI協調における理解促進
+- チーム開発での意図共有
+- 複雑なロジックの可読性向上
+- コードレビューの効率化
+- 保守性の向上
+
 ### コメントの言語統一
 **必須要件**: ソースコード内のすべてのコメントは英語で記述する。
 

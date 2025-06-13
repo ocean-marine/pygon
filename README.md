@@ -13,18 +13,20 @@ def process(items):
     return [transform(x) for x in items if x.is_valid]
 
 # ✅ Pygon: 明示的エラーハンドリングと型注釈
-def process_items(items: list[Item]) -> tuple[list[ProcessedItem] | None, str | None]:
+from result import Result, Ok, Err
+
+def process_items(items: list[Item]) -> Result[list[ProcessedItem], str]:
     if not items:
-        return None, "validation_error: items required"
+        return Err("validation_error: items required")
     
     result = []
     for item in items:
         if item.is_valid:
-            processed, err = transform_item(item)
-            if err:
-                return None, err
-            result.append(processed)
-    return result, None
+            processed_result = transform_item(item)
+            if processed_result.is_err():
+                return processed_result
+            result.append(processed_result.unwrap())
+    return Ok(result)
 ```
 
 ---
@@ -35,10 +37,12 @@ def process_items(items: list[Item]) -> tuple[list[ProcessedItem] | None, str | 
 例外の代わりに戻り値でエラーを返す。
 
 ```python
-def divide(a: int, b: int) -> tuple[float | None, str | None]:
+from result import Result, Ok, Err
+
+def divide(a: int, b: int) -> Result[float, str]:
     if b == 0:
-        return None, "division by zero"
-    return a / b, None
+        return Err("division by zero")
+    return Ok(a / b)
 ```
 
 ### 2. 徹底した型注釈
@@ -74,33 +78,37 @@ class Task:
     status: Status
     created_at: str
 
-def is_task_overdue(task: Task, current_date: str) -> tuple[bool, str | None]:
+def is_task_overdue(task: Task, current_date: str) -> Result[bool, str]:
     try:
-        return datetime.fromisoformat(task.created_at) < datetime.fromisoformat(current_date), None
+        is_overdue = datetime.fromisoformat(task.created_at) < datetime.fromisoformat(current_date)
+        return Ok(is_overdue)
     except ValueError as e:
-        return False, f"date_parse_error: {e}"
+        return Err(f"date_parse_error: {e}")
 ```
 
 ### 4. 単一責任の関数
 各関数は一つの明確な責任のみ。小さな関数を組み合わせて複雑な処理を実現。
 
 ```python
-def find_task_by_id(tasks: list[Task], task_id: int) -> tuple[Task | None, str | None]:
+from result import Result, Ok, Err
+
+def find_task_by_id(tasks: list[Task], task_id: int) -> Result[Task, str]:
     for task in tasks:
         if task.id == task_id:
-            return task, None
-    return None, "task_not_found"
+            return Ok(task)
+    return Err("task_not_found")
 
-def complete_task_workflow(task_id: int) -> tuple[Task | None, str | None]:
-    tasks, err = load_all_tasks()
-    if err:
-        return None, err
+def complete_task_workflow(task_id: int) -> Result[Task, str]:
+    tasks_result = load_all_tasks()
+    if tasks_result.is_err():
+        return tasks_result
     
-    task, err = find_task_by_id(tasks, task_id)
-    if err:
-        return None, err
+    task_result = find_task_by_id(tasks_result.unwrap(), task_id)
+    if task_result.is_err():
+        return task_result
     
-    return update_task_status(task, Status.COMPLETED), None
+    updated_task = update_task_status(task_result.unwrap(), Status.COMPLETED)
+    return Ok(updated_task)
 ```
 
 ### 5. 暗黙的動作の排除
@@ -193,14 +201,14 @@ def validate_user_data(user_data: dict) -> ValidationResult:
     
     return True, None
 
-def load_config_file(path: str) -> tuple[dict | None, str | None]:
+def load_config_file(path: str) -> Result[dict, str]:
     try:
         content = Path(path).read_text(encoding="utf-8")
-        return json.loads(content), None
+        return Ok(json.loads(content))
     except FileNotFoundError:
-        return None, "file_not_found_error: config file does not exist"
+        return Err("file_not_found_error: config file does not exist")
     except json.JSONDecodeError as e:
-        return None, f"json_parse_error: {e}"
+        return Err(f"json_parse_error: {e}")
 ```
 
 ### typesモジュール競合回避
@@ -211,8 +219,8 @@ Pygonの`src/types/`と標準ライブラリ`types`の競合防止。
 from src.types.result_types import Result  # Pygon型
 import types as python_types  # 標準ライブラリ
 
-def process_config(data: dict) -> Result[python_types.SimpleNamespace]:
-    return python_types.SimpleNamespace(**data), None
+def process_config(data: dict) -> Result[python_types.SimpleNamespace, str]:
+    return Ok(python_types.SimpleNamespace(**data))
 ```
 
 ---
@@ -236,14 +244,16 @@ class FileStorage:
     def __init__(self, directory: str):
         self.directory = directory
     
-    def save_data(self, data: dict) -> tuple[bool, str | None]:
+    def save_data(self, data: dict) -> Result[bool, str]:
         pass
 
 class Storage(Protocol):
-    def save(self, data: dict) -> tuple[bool, str | None]: ...
+    def save(self, data: dict) -> Result[bool, str]: ...
 
-def validate_email(email: str) -> tuple[bool, str | None]:
-    return "@" in email, None if "@" in email else "invalid email"
+def validate_email(email: str) -> Result[bool, str]:
+    if "@" in email:
+        return Ok(True)
+    return Err("invalid email")
 ```
 
 ### プロジェクト構成

@@ -158,6 +158,79 @@ def process_user_data(raw_data: dict[str, str]) -> tuple[User | None, str | None
     return User(int(raw_data.get("id", 0)), raw_data.get("name", ""), raw_data["email"]), None
 ```
 
+## resultライブラリのサポート
+
+Pygonでは、標準的なResult型パターンを提供するため、[result](https://github.com/dbrgn/result)ライブラリを採用しています。
+
+### インストール
+
+```bash
+pip install result>=0.16.0
+```
+
+### 基本的な使用方法
+
+```python
+from result import Result, Ok, Err
+
+def divide_with_result(a: int, b: int) -> Result[float, str]:
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+# 使用例
+result = divide_with_result(10, 2)
+if result.is_ok():
+    print(f"Result: {result.unwrap()}")
+else:
+    print(f"Error: {result.unwrap_err()}")
+
+# パターンマッチング（Python 3.10+）
+match divide_with_result(10, 0):
+    case Ok(value):
+        print(f"Success: {value}")
+    case Err(error):
+        print(f"Error: {error}")
+```
+
+### エラーハンドリングパターン
+
+resultライブラリを使用した様々なエラーハンドリングパターンの実装例：
+
+```python
+from result import Result, Ok, Err
+
+# 単一エラー（fail fast）
+def validate_email_format(email: str) -> Result[bool, str]:
+    if not email:
+        return Err("validation_error: email is required")
+    if "@" not in email:
+        return Err("validation_error: invalid email format")
+    return Ok(True)
+
+# 複数エラー（UX重視）
+def validate_user_registration(form_data: dict) -> Result[bool, list[str]]:
+    errors = []
+    if not form_data.get("name", "").strip():
+        errors.append("validation_error: name is required")
+    if "@" not in form_data.get("email", ""):
+        errors.append("validation_error: invalid email format")
+    
+    if errors:
+        return Err(errors)
+    return Ok(True)
+
+# チェーン処理
+def process_user_data(raw_data: dict) -> Result[dict, str]:
+    return (
+        validate_user_registration(raw_data)
+        .and_then(lambda _: parse_user_data(raw_data))
+        .and_then(lambda data: normalize_user_data(data))
+    )
+```
+
+---
+
 ## 実践上の重要な注意点
 
 ### バリデーション関数の必須化
@@ -222,8 +295,7 @@ from models.user import User
 
 ```python
 # ✅ 推奨: Pygonの型定義
-from src.types.result_types import Result, ValidationResult, PygonError
-from src.types.result_types import create_validation_error
+from src.types.result_types import Result, ValidationResult
 
 # ✅ 推奨: Python標準ライブラリのtypes
 import types  # 標準ライブラリ
@@ -273,8 +345,7 @@ import types as python_types
 from types import ModuleType
 
 # Pygonのtypes
-from src.types.result_types import Result, PygonError
-from src.types.result_types import create_validation_error
+from src.types.result_types import Result
 
 def process_module_config(module: ModuleType, config_data: dict) -> Result[python_types.SimpleNamespace]:
     # バリデーション
@@ -286,9 +357,9 @@ def process_module_config(module: ModuleType, config_data: dict) -> Result[pytho
     config = python_types.SimpleNamespace(**config_data)
     return config, None
 
-def validate_config_data(data: dict) -> tuple[bool, PygonError | None]:
+def validate_config_data(data: dict) -> tuple[bool, str | None]:
     if not data:
-        return False, create_validation_error("config data is required")
+        return False, "validation_error: config data is required"
     return True, None
 ```
 
@@ -476,66 +547,6 @@ class Drawable(Protocol):
 
 def render_object(obj: Drawable) -> tuple[str, str | None]:
     return obj.draw()
-```
-
----
-
-## 高度なエラーハンドリング（リッチエラー対応）
-
-デバッグに役立つ詳細な情報を提供するリッチエラーシステム。
-
-```python
-@dataclass(frozen=True)
-class PygonError:
-    error_type: str
-    message: str
-    context: dict[str, Any]
-    timestamp: str
-    source_location: str
-    metadata: dict[str, Any]
-    cause: Exception | None = None
-
-    def to_string(self) -> str:
-        return f"{self.error_type}: {self.message}"
-
-# ヘルパー関数で作成
-error = create_validation_error("email is required", 
-                                context={"field": "email"},
-                                metadata={"rule": "non_empty"})
-
-# 後方互換性
-LegacyResult: TypeAlias = tuple[T | None, str | None]       # 文字列ベース
-Result: TypeAlias = tuple[T | None, PygonError | None]      # リッチエラーベース
-
-def convert_to_legacy_error(rich_error: PygonError) -> str:
-    return rich_error.to_string()
-```
-
-**利点**: 詳細なデバッグ情報、タイムスタンプ、例外チェーン、後方互換性、適応的出力
-
----
-
-## 既存コードとの統合
-
-### デコレータによるPygonスタイル変換
-```python
-def to_pygon(error_mapping: dict[type, str] | None = None):
-    def decorator(func):
-        def wrapper(*args, **kwargs) -> tuple[Any, str | None]:
-            try:
-                return func(*args, **kwargs), None
-            except Exception as e:
-                error_type = type(e).__name__.lower().replace('error', '_error')
-                return None, f"{error_type}: {e}"
-        return wrapper
-    return decorator
-
-# 使用例
-@to_pygon({ValueError: "validation_error", FileNotFoundError: "file_not_found"})
-def load_config_file(path: str) -> dict:
-    return json.load(open(path))
-
-config, err = load_config_file("settings.json")
 ```
 
 ---

@@ -158,6 +158,73 @@ def process_user_data(raw_data: dict[str, str]) -> tuple[User | None, str | None
     return User(int(raw_data.get("id", 0)), raw_data.get("name", ""), raw_data["email"]), None
 ```
 
+## resultライブラリのサポート
+
+Pygonでは、標準的なResult型パターンを提供するため、[result](https://github.com/dbrgn/result)ライブラリを採用しています。
+
+### インストール
+
+```bash
+pip install result>=0.16.0
+```
+
+### 基本的な使用方法
+
+```python
+from result import Result, Ok, Err
+
+def divide_with_result(a: int, b: int) -> Result[float, str]:
+    if b == 0:
+        return Err("division by zero")
+    return Ok(a / b)
+
+# 使用例
+result = divide_with_result(10, 2)
+if result.is_ok():
+    print(f"Result: {result.unwrap()}")
+else:
+    print(f"Error: {result.unwrap_err()}")
+
+# パターンマッチング（Python 3.10+）
+match divide_with_result(10, 0):
+    case Ok(value):
+        print(f"Success: {value}")
+    case Err(error):
+        print(f"Error: {error}")
+```
+
+### Pygon既存型との併用
+
+resultライブラリは、Pygon既存のResult型パターンと併用できます：
+
+```python
+from result import Result, Ok, Err
+from src.types.result_types import PygonError, create_validation_error
+
+# resultライブラリ使用（シンプルなケース）
+def simple_validation(value: str) -> Result[str, str]:
+    if not value:
+        return Err("value is required")
+    return Ok(value.strip())
+
+# Pygon型使用（詳細なエラー情報が必要なケース）
+def detailed_validation(value: str) -> tuple[str | None, PygonError | None]:
+    if not value:
+        error = create_validation_error(
+            message="value is required",
+            context={"field": "input", "provided_value": value}
+        )
+        return None, error
+    return value.strip(), None
+```
+
+### 使い分けの指針
+
+- **resultライブラリ**: シンプルな成功/失敗パターン、関数型プログラミングスタイル
+- **Pygon型**: 詳細なデバッグ情報が必要、コンテキスト情報の保持が重要
+
+---
+
 ## 実践上の重要な注意点
 
 ### バリデーション関数の必須化

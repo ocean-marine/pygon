@@ -45,29 +45,7 @@ def divide(a: int, b: int) -> Result[float, str]:
     return Ok(a / b)
 ```
 
-### 2. 徹底した型注釈
-TypeAliasでResult型を統一。単一エラー（fail fast）と複数エラー（UX重視）を使い分け。
-
-```python
-# src/types/result_types.py
-T = TypeVar('T')
-Result: TypeAlias = tuple[T | None, str | None]
-ValidationResult: TypeAlias = tuple[bool, str | None]  
-MultipleErrorResult: TypeAlias = tuple[bool, list[str]]
-
-# 使用例
-UserResult = Result[User]
-
-def validate_user_registration(form_data: dict) -> MultipleErrorResult:
-    errors = []
-    if not form_data.get("name", "").strip():
-        errors.append("validation_error: name is required")
-    if "@" not in form_data.get("email", ""):
-        errors.append("validation_error: invalid email format")
-    return len(errors) == 0, errors
-```
-
-### 3. シンプルなデータ構造
+### 2. シンプルなデータ構造
 @dataclass(frozen=True)でデータのみ保持、処理は関数として分離。
 
 ```python
@@ -86,7 +64,7 @@ def is_task_overdue(task: Task, current_date: str) -> Result[bool, str]:
         return Err(f"date_parse_error: {e}")
 ```
 
-### 4. 単一責任の関数
+### 3. 単一責任の関数
 各関数は一つの明確な責任のみ。小さな関数を組み合わせて複雑な処理を実現。
 
 ```python
@@ -111,7 +89,7 @@ def complete_task_workflow(task_id: int) -> Result[Task, str]:
     return Ok(updated_task)
 ```
 
-### 5. 暗黙的動作の排除
+### 4. 暗黙的動作の排除
 すべてを明示的に記述。型注釈、戻り値、エラーケースを明確化。
 
 ## resultライブラリのサポート
@@ -150,7 +128,7 @@ def process_user_data(raw_data: dict) -> Result[dict, str]:
 
 ## 非推奨記法
 
-### ウォルラス演算子と末尾コメントの非推奨化
+### ウォルラス演算子の非推奨化
 明示性とAI協調の観点から、以下のパターンは非推奨。
 
 ```python
@@ -158,15 +136,10 @@ def process_user_data(raw_data: dict) -> Result[dict, str]:
 if (result := process_data(input_data)) is not None:
     return result
 
-# ❌ 末尾コメント: 保守性問題、フォーマット不安定
-base_rate = 0.08  # Basic tax rate
-
 # ✅ 推奨: 明示的代入と変数名
 result = process_data(input_data)
 if result is not None:
     return result
-
-basic_tax_rate = 0.08  # 自己文書化された変数名
 ```
 
 ---
@@ -211,18 +184,6 @@ def load_config_file(path: str) -> Result[dict, str]:
         return Err(f"json_parse_error: {e}")
 ```
 
-### typesモジュール競合回避
-Pygonの`src/types/`と標準ライブラリ`types`の競合防止。
-
-```python
-# ✅ 明示的なimport
-from src.types.result_types import Result  # Pygon型
-import types as python_types  # 標準ライブラリ
-
-def process_config(data: dict) -> Result[python_types.SimpleNamespace, str]:
-    return Ok(python_types.SimpleNamespace(**data))
-```
-
 ---
 
 ## 設計指針
@@ -260,7 +221,6 @@ def validate_email(email: str) -> Result[bool, str]:
 ```
 project/
 ├── src/
-│   ├── types/           # Result型集約
 │   ├── models/          # @dataclass, Enum
 │   ├── validators/      # バリデーション関数
 │   ├── services/        # ビジネスロジック関数

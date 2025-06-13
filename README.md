@@ -14,7 +14,11 @@
 ```python
 # ❌ Pythonic but unclear
 def process(items):
-    return [transform(x) for x in items if validate(x)]
+    result = []
+    for x in items:
+        if x.is_valid:
+            result.append(transform(x))
+    return result
 
 def load_config():
     return json.load(open("config.json"))
@@ -246,8 +250,11 @@ result = process_data(input_data)
 if result is not None:
     return result
 
-# ❌ 非推奨: リスト内包でのウォルラス演算子
-filtered = [y for x in items if (y := transform(x)) is not None]
+# ❌ 非推奨: ウォルラス演算子での複雑化
+filtered = []
+for x in items:
+    if (result := transform(x)) is not None:
+        filtered.append(result)
 
 # ✅ 推奨: 関数分離による明示的処理
 def filter_transformed_items(items: list) -> list:

@@ -83,12 +83,29 @@ match divide_safe(10, 0):
     case Ok(value): print(f"Success: {value}")
     case Err(error): print(f"Error: {error}")
 
+# 値の取り出し方法
+result = divide_safe(10, 2)
+if result.is_ok():
+    value = result.unwrap()          # 値を取り出し
+    print(f"結果: {value}")
+elif result.is_err():
+    error = result.unwrap_err()      # エラーを取り出し
+    print(f"エラー: {error}")
+
 # チェーン処理
 def process_data(raw_data: dict) -> Result[dict, str]:
     return (
         validate_data(raw_data)
         .and_then(lambda _: parse_data(raw_data))
         .and_then(lambda data: normalize_data(data))
+    )
+
+# 複雑なチェーンの例
+def register_user(form_data: dict) -> Result[User, str]:
+    return (
+        validate_email(form_data.get("email", ""))
+        .and_then(lambda _: validate_user_data(form_data["name"], form_data["email"]))
+        .and_then(lambda _: create_user(form_data["name"], form_data["email"]))
     )
 ```
 

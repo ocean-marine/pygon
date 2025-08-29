@@ -136,6 +136,44 @@ def validate_user_data(user_data: dict) -> ValidationResult:
     return True, None
 ```
 
+### 型注釈規約
+
+**重要**: Python 3.9+の現代的な型注釈を使用。レガシー型注釈は禁止。
+
+```python
+# ❌ レガシー型注釈（AIが使いがち）
+from typing import List, Optional, Dict, Tuple, Union
+
+def process_users(users: List[Dict[str, str]]) -> Optional[List[str]]:
+    pass
+
+def get_config() -> Union[Dict[str, str], None]:
+    pass
+
+# ✅ 現代的な型注釈（Python 3.9+推奨）
+def process_users(users: list[dict[str, str]]) -> list[str] | None:
+    pass
+
+def get_config() -> dict[str, str] | None:
+    pass
+
+# ✅ その他の現代的な型注釈例
+def analyze_data(
+    items: list[int], 
+    metadata: dict[str, str | int],
+    callback: callable[[str], bool] | None = None
+) -> tuple[bool, list[str]]:
+    pass
+```
+
+**型注釈ガイドライン**:
+- `List[T]` → `list[T]`
+- `Dict[K, V]` → `dict[K, V]`
+- `Tuple[T, U]` → `tuple[T, U]`
+- `Optional[T]` → `T | None`
+- `Union[T, U]` → `T | U`
+- `Callable` → `callable` (Python 3.9+)
+
 ### 非推奨パターン
 
 ```python
